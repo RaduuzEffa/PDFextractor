@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDF Extraktor Pro</title>
+    <link rel="icon" type="image/png" href="PDFextractor.png">
+    <link rel="apple-touch-icon" href="PDFextractor.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Knihovny z CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.5/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Hlavička -->
+        <header class="header">
+            <div class="header-title">
+                <div class="icon">📄</div>
+                <div>
+                    <h1>PDF Extraktor Pro</h1>
+                    <p>Adobe Acrobat style editace, OCR a maskování</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <label class="btn btn-primary" id="upload-btn">
+                    <span>Nahrát PDF</span>
+                    <input type="file" id="pdf-upload" accept="application/pdf" hidden>
+                </label>
+                <button id="export-btn" class="btn btn-success" style="display: none;">
+                    💾 Exportovat a Uložit
+                </button>
+            </div>
+        </header>
+
+        <!-- Informační panel (Loading) -->
+        <div id="status-panel" class="status-panel hidden">
+            <div class="spinner"></div>
+            <span id="status-text">Zpracovávám...</span>
+        </div>
+
+        <div class="main-layout">
+            <!-- Nástrojová lišta (Toolbar) -->
+            <aside id="toolbar" class="toolbar hidden">
+                <div class="toolbar-section">
+                    <h3>Nástroje</h3>
+                    <button class="tool-btn active" data-mode="select" title="Vybrat a upravit objekty">
+                        👆 Výběr
+                    </button>
+                    <button class="tool-btn" data-mode="ocr" title="Vybere oblast a převede zapečený text na upravitelný">
+                        🔍 OCR Text
+                    </button>
+                    <button class="tool-btn" data-mode="text" title="Přidá na stránku vlastní statický (zapečený) text">
+                        🔤 Nový Text
+                    </button>
+                    <button class="tool-btn" data-mode="form" title="Přidá interaktivní pole pro vyplnění v PDF readeru">
+                        📝 Formulář
+                    </button>
+                    <button class="tool-btn" data-mode="erase" title="Překryje nechtěný obsah bílým obdélníkem">
+                        🧹 Maskovat
+                    </button>
+                </div>
+                
+                <!-- Panel vlastností (Properties) -->
+                <div id="properties-panel" class="toolbar-section disabled">
+                    <h3>Vlastnosti</h3>
+                    <div class="prop-group">
+                        <label>Písmo</label>
+                        <select id="prop-font" disabled>
+                            <optgroup label="Základní">
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="TimesRoman">Times Roman</option>
+                                <option value="Courier">Courier</option>
+                            </optgroup>
+                            <optgroup label="Inter">
+                                <option value="Inter-Regular">Inter Regular</option>
+                                <option value="Inter-Medium">Inter Medium</option>
+                                <option value="Inter-Bold">Inter Bold</option>
+                            </optgroup>
+                            <optgroup label="Roboto">
+                                <option value="Roboto-Regular">Roboto Regular</option>
+                                <option value="Roboto-Medium">Roboto Medium</option>
+                                <option value="Roboto-Bold">Roboto Bold</option>
+                            </optgroup>
+                            <optgroup label="Roboto Condensed">
+                                <option value="RobotoCondensed-Regular">Roboto Cond. Regular</option>
+                                <option value="RobotoCondensed-Bold">Roboto Cond. Bold</option>
+                            </optgroup>
+                            <optgroup label="Lato">
+                                <option value="Lato-Regular">Lato Regular</option>
+                                <option value="Lato-Bold">Lato Bold</option>
+                            </optgroup>
+                            <optgroup label="Montserrat">
+                                <option value="Montserrat-Regular">Montserrat Regular</option>
+                                <option value="Montserrat-Medium">Montserrat Medium</option>
+                                <option value="Montserrat-Bold">Montserrat Bold</option>
+                            </optgroup>
+                            <optgroup label="Open Sans">
+                                <option value="OpenSans-Regular">Open Sans Regular</option>
+                                <option value="OpenSans-Medium">Open Sans Medium</option>
+                                <option value="OpenSans-Bold">Open Sans Bold</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="prop-group">
+                        <label>Velikost</label>
+                        <input type="number" id="prop-size" value="14" disabled>
+                    </div>
+                    <div class="prop-group">
+                        <label>Barva textu</label>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="prop-color" value="#000000" disabled>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>Výška zarovnání (Nudge)</label>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button id="nudge-up" class="btn btn-primary" style="padding: 4px 8px; flex: 1;" disabled>⬆️</button>
+                            <input type="number" id="prop-offset-y" value="0" disabled style="width: 60px; text-align: center; padding: 4px;">
+                            <button id="nudge-down" class="btn btn-primary" style="padding: 4px 8px; flex: 1;" disabled>⬇️</button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>Barva pozadí (Maskování)</label>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="prop-bg" value="#ffffff" disabled>
+                        </div>
+                        <label class="checkbox-label mt-1">
+                            <input type="checkbox" id="prop-bg-transparent" disabled> Průhledné
+                        </label>
+                    </div>
+                    <button id="delete-block-btn" class="btn btn-danger mt-3 w-full" style="display:none;">Odstranit</button>
+                </div>
+            </aside>
+
+            <!-- Hlavní plátno (Canvas & Overlays) -->
+            <main class="main-content">
+                <!-- Zoom Controls -->
+                <div id="zoom-controls" class="zoom-controls hidden">
+                    <button id="zoom-out" class="zoom-btn" title="Oddálit">➖</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="zoom-in" class="zoom-btn" title="Přiblížit">➕</button>
+                </div>
+
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">☁️</div>
+                    <p>Nahrajte PDF dokument pro zahájení úprav</p>
+                </div>
+
+                <div id="workspace" class="workspace hidden">
+                    <div id="pdf-container" class="pdf-container" data-mode="select">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div id="overlay-container"></div>
+                    </div>
+                </div>
+                
+                <!-- Page Navigation -->
+                <div id="page-controls" class="page-controls hidden">
+                    <button id="prev-page" class="zoom-btn" title="Předchozí strana">◀</button>
+                    <span id="page-info">Strana 1 z 1</span>
+                    <button id="next-page" class="zoom-btn" title="Další strana">▶</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.error('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

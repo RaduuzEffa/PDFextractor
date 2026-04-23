@@ -1,0 +1,17 @@
+{
+  "name": "PDF Extraktor",
+  "short_name": "PDFExt",
+  "description": "Inteligentní úprava a OCR PDF dokumentů",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "PDFextractor.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

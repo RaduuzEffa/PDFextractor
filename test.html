@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.min.js"></script>
+</head>
+<body>
+<script>
+async function test() {
+    try {
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        pdfDoc.addPage([500, 500]);
+        pdfDoc.registerFontkit(window.fontkit);
+        
+        const url = 'https://fonts.gstatic.com/s/arimo/v28/P5sMzZcdf9_T_20e.ttf';
+        const fontBytes = await fetch(url).then(r => r.arrayBuffer());
+        await pdfDoc.embedFont(fontBytes);
+        
+        console.log("SUCCESS");
+        document.body.innerHTML = "SUCCESS";
+    } catch(e) {
+        console.error(e);
+        document.body.innerHTML = "ERROR: " + e.message;
+    }
+}
+test();
+</script>
+</body>
+</html>
